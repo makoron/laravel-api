@@ -48,3 +48,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
         return response()->json(['message' => 'Unauthorized'], 403);
     });
 });
+
+Route::get('/', fn () => response()->json(['api' => 'ok']));
