@@ -27,10 +27,14 @@ Route::post('/login', function (Request $request) {
     ];
 });
 
-// 認証が必要なルート例
-Route::middleware('auth:sanctum')->get('/admin/data', function (Request $request) {
-    return ['message' => 'You are authenticated as ' . $request->user()->email];
+Route::middleware(['auth:sanctum'])->get('/admin/data', function (Request $request) {
+    $user = $request->user();
+
+    return response()->json([
+        'message' => 'You are authenticated as admin: ' . ($user?->email ?? 'unknown'),
+    ]);
 });
+
 
 
 Route::get('/user', function (Request $request) {
@@ -50,3 +54,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
 });
 
 Route::get('/', fn () => response()->json(['api' => 'ok']));
+
+
+Route::get('/ping', function () {
+    return response()->json([
+        'app' => 'Laravel API',
+        'status' => 'ok',
+        'timestamp' => now(),
+    ]);
+});
+

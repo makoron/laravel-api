@@ -1,24 +1,15 @@
 <?php
 
 return [
-    'paths' => ['api', 'api/*', 'sanctum/csrf-cookie'],
+    'paths' => ['api/*'],               // API配下だけCORS許可
     'allowed_methods' => ['*'],
-
-    // 明示的にローカルとXserverを許可
     'allowed_origins' => [
-        'http://localhost:3000',
-        'https://igadon.xsrv.jp',
+        'http://localhost:3000',        // ローカルNext
+        // 'https://next-app-peach-ten.vercel.app', // 本番を追加する場合
     ],
-
-    // Vercel の任意サブドメインを許可（例: https://your-app.vercel.app）
-    'allowed_origins_patterns' => [
-        '#^https://[a-z0-9-]+\.vercel\.app$#i',
-    ],
-
-    'allowed_headers' => ['*'],
+    'allowed_origins_patterns' => [],
+    'allowed_headers' => ['*'],         // Authorization を含め全部許可
     'exposed_headers' => [],
     'max_age' => 0,
-
-    // Bearer運用でも true のままで問題なし（将来Cookie運用に切替えても安心）
-    'supports_credentials' => true,
+    'supports_credentials' => false,    // Cookie使わないので false
 ];
