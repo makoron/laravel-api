@@ -5,6 +5,7 @@ return [
     'allowed_methods' => ['*'],
     'allowed_origins' => [
         'http://localhost:3000',        // ローカルNext
+        'http://localhost:3001',        // ローカルNext（ポート違い）
         'https://next-app-peach-ten.vercel.app', // 本番を追加する場合
     ],
     'allowed_origins_patterns' => [
