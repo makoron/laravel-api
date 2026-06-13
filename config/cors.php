@@ -1,18 +1,17 @@
 <?php
 
 return [
-    'paths' => ['api/*'],               // API配下だけCORS許可
-    'allowed_methods' => ['*'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'allowed_methods' => ['*'],   // ← 全メソッド許可
     'allowed_origins' => [
-        'http://localhost:3000',        // ローカルNext
-        'http://localhost:3001',        // ローカルNext（ポート違い）
-        'https://next-app-peach-ten.vercel.app', // 本番を追加する場合
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'https://igadon.xsrv.jp',
+        'https://next-app-peach-ten.vercel.app',
     ],
-    'allowed_origins_patterns' => [
-        '#^https://[a-z0-9-]+\.vercel\.app$#i', // 保険で入れておくと安心],
-    ],
-    'allowed_headers' => ['*'],         // Authorization を含め全部許可
+    'allowed_origins_patterns' => [],
+    'allowed_headers' => ['*'],   // ← 全ヘッダ許可（Authorization を含む）
     'exposed_headers' => [],
     'max_age' => 0,
-    'supports_credentials' => false,    // Cookie使わないので false
+    'supports_credentials' => false,
 ];

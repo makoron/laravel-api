@@ -11,9 +11,16 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
+    ->withMiddleware(function (Middleware $middleware) {
+        // Laravel 標準 CORS をグローバル適用
+        $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
+
+        // 独自ミドルウェアの alias 登録（必要に応じて）
+        $middleware->alias([
+            'apiauth' => \App\Http\Middleware\ApiAuthenticate::class,
+        ]);
+    })
+    ->withExceptions(function (Exceptions $exceptions) {
         //
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
-        //
-    })->create();
+    ->create();
