@@ -9,7 +9,17 @@ use Illuminate\Validation\ValidationException;
 
 // 記事一覧（公開用: 認証不要）
 Route::get('/articles', function () {
-    return Article::orderBy('published_at', 'desc')->get();
+    return Article::query()
+        ->where('is_published', true)
+        ->orderBy('published_at', 'desc')
+        ->get();
+});
+
+// 記事詳細（公開用: 認証不要）
+Route::get('/articles/{id}', function ($id) {
+    return Article::query()
+        ->where('is_published', true)
+        ->findOrFail($id);
 });
 
 // 管理者ログイン → APIトークン発行
@@ -55,6 +65,7 @@ Route::middleware('auth:sanctum')->group(function () {
             'image' => 'nullable|string|max:255',
             'image_alt' => 'nullable|string|max:255',
             'published_at' => 'nullable|date',
+            'is_published' => 'boolean'
         ]);
 
         $article = Article::create($data);
@@ -76,6 +87,7 @@ Route::middleware('auth:sanctum')->group(function () {
             'image' => 'nullable|string|max:255',
             'image_alt' => 'nullable|string|max:255',
             'published_at' => 'nullable|date',
+            'is_published' => 'boolean'
         ]);
 
         $article->update($data);
