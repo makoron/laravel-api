@@ -90,4 +90,17 @@ Route::middleware('auth:sanctum')->group(function () {
 
         return response()->json(['message' => 'Deleted']);
     });
+
+    Route::post('/admin/upload-image', function (Request $request) {
+    $request->validate([
+        'image' => 'required|image|max:2048',
+    ]);
+
+    $path = $request->file('image')->store('articles', 'public');
+
+    return response()->json([
+        'url' => asset('storage/' . $path),
+        'path' => $path,
+    ]);
+});
 });
