@@ -6,6 +6,10 @@ use Illuminate\Support\Facades\Route;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use App\Models\Region;
+use App\Models\Prefecture;
+use App\Models\Area;
+
 
 // 記事一覧（公開用: 認証不要）
 Route::get('/articles', function () {
@@ -21,6 +25,106 @@ Route::get('/articles/{id}', function ($id) {
         ->where('is_published', true)
         ->findOrFail($id);
 });
+
+Route::get('/articles', function () {
+    return Article::with(['region', 'prefecture', 'area'])
+        ->where('is_published', true)
+        ->orderBy('published_at', 'desc')
+        ->get();
+});
+
+Route::get('/articles/{id}', function ($id) {
+    return Article::with(['region', 'prefecture', 'area'])
+        ->where('is_published', true)
+        ->findOrFail($id);
+});
+
+
+Route::get('/regions', function () {
+    return Region::orderBy('sort_order')->get();
+});
+
+Route::get('/prefectures', function () {
+    return Prefecture::orderBy('sort_order')->get();
+});
+
+Route::get('/areas', function () {
+    return Area::orderBy('sort_order')->get();
+});
+
+Route::get('/regions/{id}/prefectures', function ($id) {
+    return Prefecture::where('region_id', $id)
+        ->orderBy('sort_order')
+        ->get();
+});
+
+Route::get('/prefectures/{id}/areas', function ($id) {
+    return Area::where('prefecture_id', $id)
+        ->orderBy('sort_order')
+        ->get();
+});
+
+Route::get('/prefectures/{slug}/articles', function ($slug) {
+    $prefecture = Prefecture::with(['region', 'areas'])
+        ->where('slug', $slug)
+        ->firstOrFail();
+
+    $articles = Article::with(['region', 'prefecture', 'area'])
+        ->where('is_published', true)
+        ->where('prefecture_id', $prefecture->id)
+        ->orderBy('published_at', 'desc')
+        ->get();
+
+    return response()->json([
+        'prefecture' => $prefecture,
+        'areas' => $prefecture->areas,
+        'articles' => $articles,
+    ]);
+});;
+
+Route::get('/regions/{slug}/prefectures', function ($slug) {
+    $region = Region::where('slug', $slug)->firstOrFail();
+
+    $prefectures = Prefecture::where('region_id', $region->id)
+        ->orderBy('sort_order')
+        ->get();
+
+    return response()->json([
+        'region' => $region,
+        'prefectures' => $prefectures,
+    ]);
+});
+
+Route::get('/regions/by-slug/{slug}/prefectures', function ($slug) {
+    $region = Region::where('slug', $slug)->firstOrFail();
+
+    $prefectures = Prefecture::where('region_id', $region->id)
+        ->orderBy('sort_order')
+        ->get();
+
+    return response()->json([
+        'region' => $region,
+        'prefectures' => $prefectures,
+    ]);
+});
+
+Route::get('/areas/{slug}/articles', function ($slug) {
+    $area = Area::with('prefecture.region')
+        ->where('slug', $slug)
+        ->firstOrFail();
+
+    $articles = Article::with(['region', 'prefecture', 'area'])
+        ->where('is_published', true)
+        ->where('area_id', $area->id)
+        ->orderBy('published_at', 'desc')
+        ->get();
+
+    return response()->json([
+        'area' => $area,
+        'articles' => $articles,
+    ]);
+});
+
 
 // 管理者ログイン → APIトークン発行
 Route::post('/login', function (Request $request) {
@@ -52,9 +156,12 @@ Route::middleware('auth:sanctum')->get('/admin/data', function (Request $request
 
 // 管理者用（認証必須）
 Route::middleware('auth:sanctum')->group(function () {
+
     // 記事一覧（管理UI用: 認証必須）
     Route::get('/admin/articles', function () {
-        return Article::orderBy('created_at', 'desc')->get();
+        return Article::with(['region', 'prefecture', 'area'])
+            ->orderBy('created_at', 'desc')
+            ->get();
     });
 
     // 記事新規作成
@@ -65,7 +172,10 @@ Route::middleware('auth:sanctum')->group(function () {
             'image' => 'nullable|string|max:255',
             'image_alt' => 'nullable|string|max:255',
             'published_at' => 'nullable|date',
-            'is_published' => 'boolean'
+            'is_published' => 'boolean',
+            'region_id' => 'nullable|exists:regions,id',
+            'prefecture_id' => 'nullable|exists:prefectures,id',
+            'area_id' => 'nullable|exists:areas,id',
         ]);
 
         $article = Article::create($data);
@@ -74,7 +184,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::get('/admin/articles/{id}', function ($id) {
-        return Article::findOrFail($id);
+        return Article::with(['region', 'prefecture', 'area'])->findOrFail($id);
     });
 
     // 記事更新
@@ -87,7 +197,10 @@ Route::middleware('auth:sanctum')->group(function () {
             'image' => 'nullable|string|max:255',
             'image_alt' => 'nullable|string|max:255',
             'published_at' => 'nullable|date',
-            'is_published' => 'boolean'
+            'is_published' => 'boolean',
+            'region_id' => 'nullable|exists:regions,id',
+            'prefecture_id' => 'nullable|exists:prefectures,id',
+            'area_id' => 'nullable|exists:areas,id',
         ]);
 
         $article->update($data);
