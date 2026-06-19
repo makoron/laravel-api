@@ -20,10 +20,33 @@ Route::get('/articles', function () {
 });
 
 // 記事詳細（公開用: 認証不要）
+// Route::get('/articles/{id}', function ($id) {
+//     return Article::query()
+//         ->where('is_published', true)
+//         ->findOrFail($id);
+// });
+// 改良バージョン
 Route::get('/articles/{id}', function ($id) {
-    return Article::query()
+    $article = Article::with(['region', 'prefecture', 'area'])
         ->where('is_published', true)
         ->findOrFail($id);
+
+    $relatedArticles = Article::with(['region', 'prefecture', 'area'])
+        ->where('is_published', true)
+        ->where('id', '!=', $article->id)
+        ->when($article->area_id, function ($query) use ($article) {
+            $query->where('area_id', $article->area_id);
+        }, function ($query) use ($article) {
+            $query->where('prefecture_id', $article->prefecture_id);
+        })
+        ->orderBy('published_at', 'desc')
+        ->limit(4)
+        ->get();
+
+    return response()->json([
+        'article' => $article,
+        'related_articles' => $relatedArticles,
+    ]);
 });
 
 Route::get('/articles', function () {
@@ -34,11 +57,27 @@ Route::get('/articles', function () {
 });
 
 Route::get('/articles/{id}', function ($id) {
-    return Article::with(['region', 'prefecture', 'area'])
+    $article = Article::with(['region', 'prefecture', 'area'])
         ->where('is_published', true)
         ->findOrFail($id);
-});
 
+    $relatedArticles = Article::with(['region', 'prefecture', 'area'])
+        ->where('is_published', true)
+        ->where('id', '!=', $article->id)
+        ->when($article->area_id, function ($query) use ($article) {
+            $query->where('area_id', $article->area_id);
+        }, function ($query) use ($article) {
+            $query->where('prefecture_id', $article->prefecture_id);
+        })
+        ->orderBy('published_at', 'desc')
+        ->limit(4)
+        ->get();
+
+    return response()->json([
+        'article' => $article,
+        'related_articles' => $relatedArticles,
+    ]);
+});
 
 Route::get('/regions', function () {
     return Region::orderBy('sort_order')->get();
@@ -82,18 +121,18 @@ Route::get('/prefectures/{slug}/articles', function ($slug) {
     ]);
 });;
 
-Route::get('/regions/{slug}/prefectures', function ($slug) {
-    $region = Region::where('slug', $slug)->firstOrFail();
+// Route::get('/regions/{slug}/prefectures', function ($slug) {
+//     $region = Region::where('slug', $slug)->firstOrFail();
 
-    $prefectures = Prefecture::where('region_id', $region->id)
-        ->orderBy('sort_order')
-        ->get();
+//     $prefectures = Prefecture::where('region_id', $region->id)
+//         ->orderBy('sort_order')
+//         ->get();
 
-    return response()->json([
-        'region' => $region,
-        'prefectures' => $prefectures,
-    ]);
-});
+//     return response()->json([
+//         'region' => $region,
+//         'prefectures' => $prefectures,
+//     ]);
+// });
 
 Route::get('/regions/by-slug/{slug}/prefectures', function ($slug) {
     $region = Region::where('slug', $slug)->firstOrFail();
@@ -169,6 +208,7 @@ Route::middleware('auth:sanctum')->group(function () {
         $data = $request->validate([
             'title' => 'required|string|max:255',
             'body' => 'required|string',
+            'body_html' => 'nullable|string',
             'image' => 'nullable|string|max:255',
             'image_alt' => 'nullable|string|max:255',
             'published_at' => 'nullable|date',
@@ -194,6 +234,7 @@ Route::middleware('auth:sanctum')->group(function () {
         $data = $request->validate([
             'title' => 'required|string|max:255',
             'body' => 'required|string',
+            'body_html' => 'nullable|string',
             'image' => 'nullable|string|max:255',
             'image_alt' => 'nullable|string|max:255',
             'published_at' => 'nullable|date',

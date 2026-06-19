@@ -11,13 +11,11 @@ class Article extends Model
         'area_id',
         'title',
         'body',
+        'body_html',
         'image',
         'image_alt',
         'published_at',
         'is_published',
-        'region_id',
-        'prefecture_id',
-        'area_id',
     ];
 
     public function region()
