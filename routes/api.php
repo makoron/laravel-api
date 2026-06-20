@@ -10,7 +10,6 @@ use App\Models\Region;
 use App\Models\Prefecture;
 use App\Models\Area;
 
-
 // 記事一覧（公開用: 認証不要）
 Route::get('/articles', function () {
     return Article::query()
@@ -164,6 +163,25 @@ Route::get('/areas/{slug}/articles', function ($slug) {
     ]);
 });
 
+Route::get('/search', function (Request $request) {
+    $keyword = trim((string) $request->query('q', ''));
+
+    if ($keyword === '') {
+        return response()->json([]);
+    }
+
+    $articles = Article::with(['region', 'prefecture', 'area'])
+        ->where('is_published', true)
+        ->where(function ($query) use ($keyword) {
+            $query->where('title', 'like', '%' . $keyword . '%')
+                ->orWhere('body', 'like', '%' . $keyword . '%')
+                ->orWhere('body_html', 'like', '%' . $keyword . '%');
+        })
+        ->orderBy('published_at', 'desc')
+        ->get();
+
+    return response()->json($articles);
+});
 
 // 管理者ログイン → APIトークン発行
 Route::post('/login', function (Request $request) {
