@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 class Article extends Model
 {
     protected $fillable = [
+        'slug',
         'region_id',
         'prefecture_id',
         'area_id',

@@ -12,53 +12,25 @@ use App\Models\Area;
 
 // 記事一覧（公開用: 認証不要）
 Route::get('/articles', function () {
-    return Article::query()
-        ->where('is_published', true)
-        ->orderBy('published_at', 'desc')
-        ->get();
-});
-
-// 記事詳細（公開用: 認証不要）
-// Route::get('/articles/{id}', function ($id) {
-//     return Article::query()
-//         ->where('is_published', true)
-//         ->findOrFail($id);
-// });
-// 改良バージョン
-Route::get('/articles/{id}', function ($id) {
-    $article = Article::with(['region', 'prefecture', 'area'])
-        ->where('is_published', true)
-        ->findOrFail($id);
-
-    $relatedArticles = Article::with(['region', 'prefecture', 'area'])
-        ->where('is_published', true)
-        ->where('id', '!=', $article->id)
-        ->when($article->area_id, function ($query) use ($article) {
-            $query->where('area_id', $article->area_id);
-        }, function ($query) use ($article) {
-            $query->where('prefecture_id', $article->prefecture_id);
-        })
-        ->orderBy('published_at', 'desc')
-        ->limit(4)
-        ->get();
-
-    return response()->json([
-        'article' => $article,
-        'related_articles' => $relatedArticles,
-    ]);
-});
-
-Route::get('/articles', function () {
     return Article::with(['region', 'prefecture', 'area'])
         ->where('is_published', true)
         ->orderBy('published_at', 'desc')
         ->get();
 });
 
-Route::get('/articles/{id}', function ($id) {
+// 記事詳細（公開用: 認証不要）
+// slug があれば slug、数字なら id でも取得できる
+Route::get('/articles/{slugOrId}', function ($slugOrId) {
     $article = Article::with(['region', 'prefecture', 'area'])
         ->where('is_published', true)
-        ->findOrFail($id);
+        ->where(function ($query) use ($slugOrId) {
+            $query->where('slug', $slugOrId);
+
+            if (ctype_digit((string) $slugOrId)) {
+                $query->orWhere('id', $slugOrId);
+            }
+        })
+        ->firstOrFail();
 
     $relatedArticles = Article::with(['region', 'prefecture', 'area'])
         ->where('is_published', true)
@@ -118,20 +90,7 @@ Route::get('/prefectures/{slug}/articles', function ($slug) {
         'areas' => $prefecture->areas,
         'articles' => $articles,
     ]);
-});;
-
-// Route::get('/regions/{slug}/prefectures', function ($slug) {
-//     $region = Region::where('slug', $slug)->firstOrFail();
-
-//     $prefectures = Prefecture::where('region_id', $region->id)
-//         ->orderBy('sort_order')
-//         ->get();
-
-//     return response()->json([
-//         'region' => $region,
-//         'prefectures' => $prefectures,
-//     ]);
-// });
+});
 
 Route::get('/regions/by-slug/{slug}/prefectures', function ($slug) {
     $region = Region::where('slug', $slug)->firstOrFail();
@@ -224,6 +183,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // 記事新規作成
     Route::post('/admin/articles', function (Request $request) {
         $data = $request->validate([
+            'slug' => 'nullable|string|max:255|unique:articles,slug',
             'title' => 'required|string|max:255',
             'body' => 'required|string',
             'body_html' => 'nullable|string',
@@ -250,6 +210,7 @@ Route::middleware('auth:sanctum')->group(function () {
         $article = Article::findOrFail($id);
 
         $data = $request->validate([
+            'slug' => 'nullable|string|max:255|unique:articles,slug,' . $article->id,
             'title' => 'required|string|max:255',
             'body' => 'required|string',
             'body_html' => 'nullable|string',
@@ -276,15 +237,15 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::post('/admin/upload-image', function (Request $request) {
-    $request->validate([
-        'image' => 'required|image|max:2048',
-    ]);
+        $request->validate([
+            'image' => 'required|image|max:2048',
+        ]);
 
-    $path = $request->file('image')->store('articles', 'public');
+        $path = $request->file('image')->store('articles', 'public');
 
-    return response()->json([
-        'url' => asset('storage/' . $path),
-        'path' => $path,
-    ]);
-});
+        return response()->json([
+            'url' => asset('storage/' . $path),
+            'path' => $path,
+        ]);
+    });
 });
