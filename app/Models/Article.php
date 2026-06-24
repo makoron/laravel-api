@@ -17,6 +17,10 @@ class Article extends Model
         'image_alt',
         'published_at',
         'is_published',
+        'display_order',
+        'is_featured',
+        'display_order' => 'nullable|integer',
+        'is_featured' => 'boolean',
     ];
 
     public function region()

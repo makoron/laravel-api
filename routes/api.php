@@ -14,7 +14,8 @@ use App\Models\Area;
 Route::get('/articles', function () {
     return Article::with(['region', 'prefecture', 'area'])
         ->where('is_published', true)
-        ->orderBy('published_at', 'desc')
+        ->orderBy('display_order')
+        ->orderByDesc('published_at')
         ->get();
 });
 
@@ -40,7 +41,8 @@ Route::get('/articles/{slugOrId}', function ($slugOrId) {
         }, function ($query) use ($article) {
             $query->where('prefecture_id', $article->prefecture_id);
         })
-        ->orderBy('published_at', 'desc')
+        ->orderBy('display_order')
+        ->orderByDesc('published_at')
         ->limit(4)
         ->get();
 
@@ -82,7 +84,8 @@ Route::get('/prefectures/{slug}/articles', function ($slug) {
     $articles = Article::with(['region', 'prefecture', 'area'])
         ->where('is_published', true)
         ->where('prefecture_id', $prefecture->id)
-        ->orderBy('published_at', 'desc')
+        ->orderBy('display_order')
+        ->orderByDesc('published_at')
         ->get();
 
     return response()->json([
@@ -113,7 +116,8 @@ Route::get('/areas/{slug}/articles', function ($slug) {
     $articles = Article::with(['region', 'prefecture', 'area'])
         ->where('is_published', true)
         ->where('area_id', $area->id)
-        ->orderBy('published_at', 'desc')
+        ->orderBy('display_order')
+        ->orderByDesc('published_at')
         ->get();
 
     return response()->json([
@@ -136,7 +140,8 @@ Route::get('/search', function (Request $request) {
                 ->orWhere('body', 'like', '%' . $keyword . '%')
                 ->orWhere('body_html', 'like', '%' . $keyword . '%');
         })
-        ->orderBy('published_at', 'desc')
+        ->orderBy('display_order')
+        ->orderByDesc('published_at')
         ->get();
 
     return response()->json($articles);
@@ -176,7 +181,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // 記事一覧（管理UI用: 認証必須）
     Route::get('/admin/articles', function () {
         return Article::with(['region', 'prefecture', 'area'])
-            ->orderBy('created_at', 'desc')
+            ->orderByDesc('is_featured')
+            ->orderBy('display_order')
+            ->orderByDesc('published_at')
+            ->orderByDesc('created_at')
             ->get();
     });
 
@@ -194,6 +202,8 @@ Route::middleware('auth:sanctum')->group(function () {
             'region_id' => 'nullable|exists:regions,id',
             'prefecture_id' => 'nullable|exists:prefectures,id',
             'area_id' => 'nullable|exists:areas,id',
+            'display_order' => 'nullable|integer',
+            'is_featured' => 'boolean',
         ]);
 
         $article = Article::create($data);
@@ -221,6 +231,8 @@ Route::middleware('auth:sanctum')->group(function () {
             'region_id' => 'nullable|exists:regions,id',
             'prefecture_id' => 'nullable|exists:prefectures,id',
             'area_id' => 'nullable|exists:areas,id',
+            'display_order' => 'nullable|integer',
+            'is_featured' => 'boolean',
         ]);
 
         $article->update($data);
