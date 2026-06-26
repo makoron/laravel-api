@@ -102,9 +102,19 @@ Route::get('/regions/by-slug/{slug}/prefectures', function ($slug) {
         ->orderBy('sort_order')
         ->get();
 
+    $articles = Article::with(['region', 'prefecture', 'area'])
+        ->where('is_published', true)
+        ->where('region_id', $region->id)
+        ->orderByDesc('is_featured')
+        ->orderBy('display_order')
+        ->orderByDesc('published_at')
+        ->limit(10)
+        ->get();
+
     return response()->json([
         'region' => $region,
         'prefectures' => $prefectures,
+        'articles' => $articles,
     ]);
 });
 
@@ -259,5 +269,19 @@ Route::middleware('auth:sanctum')->group(function () {
             'url' => asset('storage/' . $path),
             'path' => $path,
         ]);
+    });
+
+    // 記事の表示制御だけ更新
+    Route::put('/admin/articles/{id}/display-control', function (Request $request, $id) {
+        $article = Article::findOrFail($id);
+
+        $data = $request->validate([
+            'display_order' => 'required|integer',
+            'is_featured' => 'required|boolean',
+        ]);
+
+        $article->update($data);
+
+        return response()->json($article);
     });
 });
